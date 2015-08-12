@@ -1,0 +1,80 @@
+Create a rescue admin account on local OSX machine:
+
+- Create / login with a *temporary admin* account.
+- terminal (get machine serial number - MSN):
+
+    system_profiler | grep "Serial Number (system)"
+
+- OSX: menu->system preferences->users & groups->new acount
+    * type: Administrator
+    * name (both): rescue-<Machine Serial Number (MSN)>
+    * use separate password
+
+- terminal:
+
+    sudo dscl . create /Users/rescue-<MSN> IsHidden 1
+    sudo mv /Users/rescue-<MSN> /var/resue-<MSN>
+    sudo dscl . create /Users/rescue-<MSN> NFSHomeDirectory /var/rescue-<MSN>
+    sudo dscl . delete "/SharePoints/rescue-<MSN>'s Public Folder"
+    sudo defaults write /Library/Preferences/com.apple.loginwindow HiddenUserList -array-add rescue-<MSN>
+
+- logout and login with rescue-<MSN>, delete temporary account.
+
+
+
+Install autossh:
+
+- terminal (install as root):
+
+  sudo su -
+  sudo hdiutil attach Command_Line_Tools_OS_X_10.10_for_Xcode_6.4.dmg
+  sudo installer -package "/Volumes/Command Line Developer Tools/Command Line Tools (OS X 10.10).pkg" -target /
+  
+  curl http://www.harding.motd.ca/autossh/autossh-1.4e.tgz -o autossh-1.43.tgz
+  gunzip -c autossh-1.4e.tgz | tar xvf -; cd autossh-1.4e
+  ./configure
+  make
+  make install
+
+- verify autossh is working by launching it
+
+
+
+Setup SSH configs:
+
+- setup public keys (details not covered here
+    * create passwordless keys for OSX: <MSN>, place in /var/root/.ssh; import public key to server
+    * create keys for server: rescue-<MSN>, and import public key to OSX rescue-<MSN>
+
+- copy root.ssh.config to /var/root/.ssh/config and modify as needed:
+    * Recommend user@server is set to MSN; and chrooted / ssh options are restricted
+    * Default server port: 54321
+    * Default reverse-tunnel port: 50000
+    * By default, autosshd uses ports 50001,50002 for ssh tunnel monitoring
+    * Remember, your passwordless keys should be stored in /var/root/.ssh/
+
+- Modify /etc/sshd_config and set
+    PermitRootLogin no
+    PubkeyAuthentication yes
+    ChallengeResponseAuthentication no
+
+
+
+Install LaunchDaemons for autosshd:
+
+- edit autossh.plist, and insert your server's DNS address
+- copy plists to /Library/LaunchDaemons/
+- load daemons
+
+  sudo launchctl load /Library/LaunchDaemons/autosshd.plist
+  sudo launchctl load /Library/LaunchDaemons/autossh.plist
+
+
+
+Verify:
+
+- reboot OSX machine
+- from server:
+
+  ssh -p 50000 -i rescue-<MSN>.pub rescue-<MSN>@localhost
+
