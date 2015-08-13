@@ -64,10 +64,10 @@ Setup SSH configs:
     * Default reverse-tunnel port: 50000
     * By default, autosshd uses ports 50001,50002 for ssh tunnel monitoring
     * Remember, your passwordless keys should be stored in /var/root/.ssh/
-    * Ensure file/directory owned by root, and 0600
+    * Ensure file/directory owned by root, and 0700
 
 - copy server's public key to /var/rescue-<MSN>/.ssh/authorized_keys
-    * Ensure file/directory owned by rescue-<MSN>, and 0600
+    * Ensure file/directory owned by rescue-<MSN>, and 0700
 
 - Modify /etc/sshd_config and set
     PermitRootLogin no
