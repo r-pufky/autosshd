@@ -9,11 +9,19 @@ Create a rescue admin account on local OSX machine:
     * type: Administrator
     * name (both): rescue-<Machine Serial Number (MSN)>
     * use separate password
+    * Login options->disable fast user switching
+
+- OSX: menu->system preferences->sharing
+    * Enable SSHD (remote login) for administrators
+
+- OSX: menu->system preferences->energy saver
+    * Enable always on for computer
+    * Enable start automatically after power failure
 
 - terminal:
 
     sudo dscl . create /Users/rescue-<MSN> IsHidden 1
-    sudo mv /Users/rescue-<MSN> /var/resue-<MSN>
+    sudo mv /Users/rescue-<MSN> /var/
     sudo dscl . create /Users/rescue-<MSN> NFSHomeDirectory /var/rescue-<MSN>
     sudo dscl . delete "/SharePoints/rescue-<MSN>'s Public Folder"
     sudo defaults write /Library/Preferences/com.apple.loginwindow HiddenUserList -array-add rescue-<MSN>
@@ -36,7 +44,7 @@ Install autossh:
   make
   make install
 
-- verify autossh is working by launching it
+- verify autossh is working by launching it, delete source directory.
 
 
 
@@ -44,14 +52,22 @@ Setup SSH configs:
 
 - setup public keys (details not covered here
     * create passwordless keys for OSX: <MSN>, place in /var/root/.ssh; import public key to server
-    * create keys for server: rescue-<MSN>, and import public key to OSX rescue-<MSN>
+    * create server keys: rescue-<MSN>, import public key to OSX rescue-<MSN>
+    * disable server account shell (/bin/false), restrict ssh options:
+       no-agent-forwarding,no-pty,no-user-rc,no-X11-forwarding  
+    * use server.ssh.config for an example for auto-logging into to OSX machine
 
-- copy root.ssh.config to /var/root/.ssh/config and modify as needed:
+
+- copy rescue.ssh.config to /var/root/.ssh/config and modify as needed:
     * Recommend user@server is set to MSN; and chrooted / ssh options are restricted
     * Default server port: 54321
     * Default reverse-tunnel port: 50000
     * By default, autosshd uses ports 50001,50002 for ssh tunnel monitoring
     * Remember, your passwordless keys should be stored in /var/root/.ssh/
+    * Ensure file/directory owned by root, and 0600
+
+- copy server's public key to /var/rescue-<MSN>/.ssh/authorized_keys
+    * Ensure file/directory owned by rescue-<MSN>, and 0600
 
 - Modify /etc/sshd_config and set
     PermitRootLogin no
@@ -63,18 +79,21 @@ Setup SSH configs:
 Install LaunchDaemons for autosshd:
 
 - edit autossh.plist, and insert your server's DNS address
+
 - copy plists to /Library/LaunchDaemons/
+
 - load daemons
 
-  sudo launchctl load /Library/LaunchDaemons/autosshd.plist
-  sudo launchctl load /Library/LaunchDaemons/autossh.plist
+  sudo chown root:staff /Library/LaunchDaemons/autossh*.plist
+  sudo launchctl load /Library/LaunchDaemons/autossh*.plist
 
 
 
 Verify:
 
 - reboot OSX machine
-- from server:
+- from server (manually, and .ssh/config shortcut):
 
   ssh -p 50000 -i rescue-<MSN>.pub rescue-<MSN>@localhost
+  ssh rescue-<MSN>
 
